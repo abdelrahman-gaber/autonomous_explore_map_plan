@@ -1,0 +1,23 @@
+<launch>
+	<arg name="enable_turtlebot_simulation" value="true"/>
+	<arg name="enable_keyboard_teleoperation" value="true"/>
+	<arg name="enable_rviz" value="true"/>
+
+    <group if="$(arg enable_turtlebot_simulation)">
+	    <include file="$(find turtlebot_gazebo)/launch/turtlebot_world.launch"/>  <!-- other ROS distributions -->
+	    <!--include file="$(find turtlebot_gazebo)/launch/turtlebot_playground.launch"/-->  <!-- ROS hydro -->
+
+	    <group if="$(arg enable_rviz)">
+			<include file="$(find autonomous_explore_map_plan)/launch/view_robot.launch"/>
+		</group>
+    </group>
+    <group unless="$(arg enable_turtlebot_simulation)">
+		<include file="$(find turtlebot_bringup)/launch/minimal.launch"/>
+		<include file="$(find turtlebot_bringup)/launch/3dsensor.launch"/>
+    </group>
+
+    <group if="$(arg enable_keyboard_teleoperation)">
+    	<include file="$(find turtlebot_teleop)/launch/keyboard_teleop.launch">
+    	</include>
+    </group>
+</launch>

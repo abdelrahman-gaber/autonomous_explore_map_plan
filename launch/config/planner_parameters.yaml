@@ -1,0 +1,6 @@
+planner_name : "RRTstar" # available planners (RRT, RRTstar, RRTConnect), (EST), (PRM, PRMstar)
+solving_time : 5.0 # available computation time to attempt to solve the query
+
+#Configuration Space (C-Space) boundaries
+planning_bounds_x : [-15, 15]
+planning_bounds_y : [-15, 15]
