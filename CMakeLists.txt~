@@ -158,9 +158,8 @@ add_definitions(${EIGEN_DEFINITIONS})
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
 # add_executable(${PROJECT_NAME}_node src/autonomous_explore_map_plan_node.cpp)
-
-add_executable(laserscan_2_pointcloud src/laserscan_to_pointcloud.cpp)
-target_link_libraries(laserscan_2_pointcloud ${catkin_LIBRARIES} ${Eigen_LIBRARIES} )
+add_executable(laserscan_to_pointcloud src/laserscan_to_pointcloud.cpp)
+target_link_libraries(laserscan_to_pointcloud ${catkin_LIBRARIES} ${Eigen_LIBRARIES} )
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
