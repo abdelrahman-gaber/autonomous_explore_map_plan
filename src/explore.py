@@ -22,6 +22,9 @@ if __name__ == '__main__':
     rospy.loginfo("%s: starting turtlebot exploration", rospy.get_name())
 
     controller = Controller()
+
+    # get map from controller through service call 
+    # pass the map and its resolution to ProcessProjectedMap()
     pm = ProcessMap()
     pm.ProcessProjectedMap()
 
