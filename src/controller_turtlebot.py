@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # ROS imports
-import roslib; roslib.load_manifest('control_turtlebot')
+import roslib; roslib.load_manifest('autonomous_explore_map_plan')
 import rospy
 import tf
 import math
@@ -9,7 +9,7 @@ import math
 #ROS messages
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
-from control_turtlebot.srv import GotoWaypoint, GotoWaypointResponse, FindPathToGoal, FindPathToGoalResponse, FindPathToGoalRequest
+from autonomous_explore_map_plan.srv import GotoWaypoint, GotoWaypointResponse, FindPathToGoal, FindPathToGoalResponse, FindPathToGoalRequest
 
 #Numpy
 import numpy as np
@@ -40,13 +40,14 @@ class Controller(object):
 		return
 	
 	def calculateControlInput(self, req):
-		
+		# define a request for FindPathToGoal service
 		planner_request = FindPathToGoalRequest()
 		planner_request.goal_state_x = req.goal_state_x
 		planner_request.goal_state_y = req.goal_state_y
 		
 		planner_response = self.find_path_to_goal_serv_(planner_request)
 		
+		# Driver for the robot 
 		for pose in planner_response.poses:
 			#print pose
 			control_input = Twist()

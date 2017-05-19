@@ -31,7 +31,7 @@
 #include <std_srvs/Empty.h>
 #include <tf/message_filter.h>
 #include <tf/transform_listener.h>
-#include <control_turtlebot/FindPathToGoal.h>
+#include <autonomous_explore_map_plan/FindPathToGoal.h>
 #include <geometry_msgs/Pose2D.h>
 
 // *** IO ***
@@ -56,7 +56,7 @@ class OfflinePlannerR2
 		//! Constructor
 		OfflinePlannerR2();
 		//! Planner setup
-		void planWithSimpleSetup(std::vector<double> start_state, std::vector<double> goal_state, control_turtlebot::FindPathToGoal::Response& response);
+		void planWithSimpleSetup(std::vector<double> start_state, std::vector<double> goal_state, autonomous_explore_map_plan::FindPathToGoal::Response& response);
 		//! Procedure to visualize the resulting path
 		void visualizeRRT(og::PathGeometric geopath);
 		//! Procedure to create a mission file using the resulting path
@@ -64,7 +64,7 @@ class OfflinePlannerR2
 		//! Callback for getting current vehicle position
 		void odomCallback(const nav_msgs::OdometryPtr &odom_msg);
 		//! Callback for setting the query goal to specified values
-		bool findPathToGoal(control_turtlebot::FindPathToGoal::Request& request, control_turtlebot::FindPathToGoal::Response& response);
+		bool findPathToGoal(autonomous_explore_map_plan::FindPathToGoal::Request& request, autonomous_explore_map_plan::FindPathToGoal::Response& response);
     private:
 		// *** ROS ***
 		ros::NodeHandle node_handler_;
@@ -123,7 +123,7 @@ OfflinePlannerR2::OfflinePlannerR2()
 /*!
  * Setup a sampling-based planner using OMPL.
 */
-void OfflinePlannerR2::planWithSimpleSetup(std::vector<double> start_state, std::vector<double> goal_state, control_turtlebot::FindPathToGoal::Response& response)
+void OfflinePlannerR2::planWithSimpleSetup(std::vector<double> start_state, std::vector<double> goal_state, autonomous_explore_map_plan::FindPathToGoal::Response& response)
 {
 	//=======================================================================
 	// Instantiate the state space (R2, X-Y). Navigating at a constant depth.
@@ -369,8 +369,8 @@ void OfflinePlannerR2::odomCallback(const nav_msgs::OdometryPtr &odom_msg)
 /*!
  * Service callback that sets the value of the query goal to the value of current position
 */
-bool OfflinePlannerR2::findPathToGoal(control_turtlebot::FindPathToGoal::Request& request, control_turtlebot::FindPathToGoal::Response& response){
-	ROS_INFO("%s: findin a path from current position to a given goal", ros::this_node::getName().c_str());
+bool OfflinePlannerR2::findPathToGoal(autonomous_explore_map_plan::FindPathToGoal::Request& request, autonomous_explore_map_plan::FindPathToGoal::Response& response){
+	ROS_INFO("%s: finding a path from current position to a given goal", ros::this_node::getName().c_str());
 	vector<double> goal_state;
 	goal_state.resize(2);
 	goal_state[0] = request.goal_state_x;
