@@ -100,7 +100,7 @@ class Controller(object):
 				rospy.logdebug("%s: control_input.linear.x %f\n", rospy.get_name(), control_input.linear.x)
 				rospy.logdebug("%s: control_input.angular.z %f\n", rospy.get_name(), control_input.angular.z)
 	 			
-				if distance_to_goal <= 0.2:
+				if distance_to_goal <= 0.4:
 					break
 				loop_rate.sleep()
 		

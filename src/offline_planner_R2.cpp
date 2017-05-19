@@ -145,7 +145,7 @@ void OfflinePlannerR2::planWithSimpleSetup(std::vector<double> start_state, std:
 	//=======================================================================
 	simple_setup_ = og::SimpleSetupPtr( new og::SimpleSetup(space) );
 	ob::SpaceInformationPtr si = simple_setup_->getSpaceInformation();
-
+	
 	//=======================================================================
 	// Create a planner. OMPL is specialized in sampling-based methods
 	//=======================================================================

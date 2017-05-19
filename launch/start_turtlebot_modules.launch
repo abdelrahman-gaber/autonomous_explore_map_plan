@@ -5,6 +5,7 @@
 
     <group if="$(arg enable_turtlebot_simulation)">
 	    <include file="$(find turtlebot_gazebo)/launch/turtlebot_world.launch"/>  <!-- other ROS distributions -->
+	    <arg name="world_name" value="worlds/willowgarage.world"/>
 	    <!--include file="$(find turtlebot_gazebo)/launch/turtlebot_playground.launch"/-->  <!-- ROS hydro -->
 
 	    <group if="$(arg enable_rviz)">
