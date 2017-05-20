@@ -2,6 +2,7 @@
 	<arg name="enable_octomap" value="true"/>
 	<arg name="enable_controller" value="true"/>
 	<arg name="enable_planner" value="true"/>
+	<arg name="enable_exploration" value="true"/>
     
 	<group if="$(arg enable_octomap)">
     	<node pkg="octomap_server" type="octomap_server_node" name="octomap_server" args=" " cwd="node" output="screen">
@@ -15,7 +16,7 @@
     
     <node pkg="autonomous_explore_map_plan" type="laserscan_2_pointcloud" name="laserscan_to_pointcloud" respawn="true" output="screen" />
     
-    <group if="$(arg enable_controller)">
+    <group if="$(arg enable_controller)"> 
     	<node pkg="autonomous_explore_map_plan" type="turtlebot_drive.py" name="turtlebot_drive" respawn="true" output="screen" />
     </group>
     
@@ -24,5 +25,9 @@
 		<rosparam command="load" file="$(find autonomous_explore_map_plan)/launch/config/planner_parameters.yaml" />
 		<node pkg="autonomous_explore_map_plan" type="offline_planner_R2" name="tutorial_offline_planner_R2" output="screen" />
 	</group>
+	
+     <group if="$(arg enable_exploration)">
+    	<node pkg="autonomous_explore_map_plan" type="explore.py" name="explore_node" respawn="true" output="screen" />
+    	</group>
 
 </launch>

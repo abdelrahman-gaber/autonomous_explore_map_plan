@@ -2,14 +2,15 @@
 	<arg name="enable_turtlebot_simulation" value="true"/>
 	<arg name="enable_keyboard_teleoperation" value="true"/>
 	<arg name="enable_rviz" value="true"/>
+        
 
     <group if="$(arg enable_turtlebot_simulation)">
-	    <include file="$(find turtlebot_gazebo)/launch/turtlebot_world.launch"/>  <!-- other ROS distributions -->
-	    <!--include file="$(find turtlebot_gazebo)/launch/turtlebot_playground.launch"/-->  <!-- ROS hydro -->
-
-	    <group if="$(arg enable_rviz)">
-			<include file="$(find autonomous_explore_map_plan)/launch/view_robot.launch"/>
-		</group>
+	    <include file="$(find turtlebot_gazebo)/launch/turtlebot_world.launch"> 
+ 	    <arg name="world_file" value="worlds/willowgarage.world"/> <!-- Note: the world_name is with respect to GAZEBO_RESOURCE_PATH environmental variable -->
+ 	    <rg name="gui" default="false"/>
+	  
+		</include>
+	    
     </group>
     <group unless="$(arg enable_turtlebot_simulation)">
 		<include file="$(find turtlebot_bringup)/launch/minimal.launch"/>
@@ -20,4 +21,8 @@
     	<include file="$(find turtlebot_teleop)/launch/keyboard_teleop.launch">
     	</include>
     </group>
+
+    <group if="$(arg enable_rviz)">
+			<include file="$(find autonomous_explore_map_plan)/launch/view_robot.launch"/>
+		</group>
 </launch>

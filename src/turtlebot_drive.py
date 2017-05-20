@@ -24,6 +24,8 @@ import numpy as np
 class Controller(object):
 
 	def __init__(self):
+		#rospy.init_node('turtlebot_drive', log_level=rospy.INFO)
+		#rospy.loginfo("%s: starting turtlebot controller", rospy.get_name())
 		#self.odometry_sub_ = rospy.Subscriber("/odom", Odometry, self.odomCallback, queue_size = 1)
 		self.model_sub = rospy.Subscriber("/gazebo/model_states", ModelStates, self.modelcallback)
 		#self.map_sub_ = rospy.Subscriber("/projected_map", OccupancyGrid, self.occupCallback, queue_size = 1)
@@ -39,15 +41,21 @@ class Controller(object):
 		self.desired_position_ = np.zeros(2)
 		self.desired_orientation_ = 0.0
 		
+		# rotate once at the beginning before exploring
+		rospy.sleep(1)
+		self.rotateOnce()
 		
-		rospy.wait_for_service('/controller_turtlebot/find_path_to_goal')
+		#print ('before service wait')
+		rospy.wait_for_service('/turtlebot_drive/find_path_to_goal')
 		try:
 			self.find_path_to_goal_serv_ = rospy.ServiceProxy('/turtlebot_drive/find_path_to_goal', FindPathToGoal)
 		except rospy.ServiceException, e:
 			print "Service call failed: %s"%e
 		
-		#return
+		return
+		#print ('after service wait')
 
+	'''
 	def service(self):
 		print ('in service function')
 		self.serv_ = rospy.Service('/turtlebot_drive/goto', 
@@ -58,6 +66,7 @@ class Controller(object):
 			self.find_path_to_goal_serv_ = rospy.ServiceProxy('/turtlebot_drive/find_path_to_goal', FindPathToGoal)
 		except rospy.ServiceException, e:
 			print "Service call failed: %s"%e
+	'''
 
        
 	def calculateControlInput(self, req):
@@ -178,12 +187,12 @@ class Controller(object):
  		rotate = 0
  		while True:
  			self.control_input_pub_.publish(control_input)
- 			print ('current orientation' + str(self.current_orientation_))
+ 			#print ('current orientation' + str(self.current_orientation_))
  			rospy.sleep(0.1)
  			if np.abs(self.current_orientation_) < 0.1:
  				rotate += 1
  				print ('rotate' + str(rotate))
- 			if rotate == 3:
+ 			if rotate == 1:
  				break
  		
 
@@ -197,11 +206,14 @@ if __name__ == '__main__':
     rospy.init_node('turtlebot_drive', log_level=rospy.INFO)
     rospy.loginfo("%s: starting turtlebot controller", rospy.get_name())
 
+    print ('before controller')
     controller = Controller()
+    print ('after controller')
     print (str(controller.current_orientation_))
     #while not rospy.is_shutdown():
-    controller.rotateOnce()
+    #controller.rotateOnce()
     	
     #controller.service()
-    print ('exit out')
+    print ('exit out drive')
     rospy.spin()
+

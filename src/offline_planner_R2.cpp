@@ -116,7 +116,7 @@ OfflinePlannerR2::OfflinePlannerR2()
 	//=======================================================================
 	// Service
 	//=======================================================================
-	service_ = node_handler_.advertiseService("/controller_turtlebot/find_path_to_goal", &OfflinePlannerR2::findPathToGoal, this);
+	service_ = node_handler_.advertiseService("/turtlebot_drive/find_path_to_goal", &OfflinePlannerR2::findPathToGoal, this);
 }
 
 //!  Planner setup.
