@@ -16,7 +16,7 @@
     <node pkg="autonomous_explore_map_plan" type="laserscan_2_pointcloud" name="laserscan_to_pointcloud" respawn="true" output="screen" />
     
     <group if="$(arg enable_controller)">
-    	<node pkg="autonomous_explore_map_plan" type="controller_turtlebot.py" name="controller_turtlebot" respawn="true" output="screen" />
+    	<node pkg="autonomous_explore_map_plan" type="turtlebot_drive.py" name="turtlebot_drive" respawn="true" output="screen" />
     </group>
     
     <group if="$(arg enable_planner)">
