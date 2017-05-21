@@ -110,7 +110,7 @@ class Controller(object):
             #if checker == 2:
                 #break
         #return GotoWaypointResponse()
-        GotoResp.FindPathFlag = 1
+        GotoResp.FindPathFlag = 0
         return GotoResp
             
     def check_unknown_obstacle(self):

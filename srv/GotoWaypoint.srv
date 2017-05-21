@@ -2,3 +2,4 @@
 float32 goal_state_x
 float32 goal_state_y
 ---
+int8 FindPathFlag

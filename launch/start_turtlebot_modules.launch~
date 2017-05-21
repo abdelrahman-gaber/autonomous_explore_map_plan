@@ -1,13 +1,13 @@
 <launch>
 	<arg name="enable_turtlebot_simulation" value="true"/>
-	<arg name="enable_keyboard_teleoperation" value="true"/>
+	<arg name="enable_keyboard_teleoperation" value="false"/>
 	<arg name="enable_rviz" value="true"/>
         
 
     <group if="$(arg enable_turtlebot_simulation)">
 	    <include file="$(find turtlebot_gazebo)/launch/turtlebot_world.launch"> 
  	    <arg name="world_file" value="worlds/willowgarage.world"/> <!-- Note: the world_name is with respect to GAZEBO_RESOURCE_PATH environmental variable -->
- 	    <rg name="gui" default="false"/>
+ 	    <arg name="gui" default="false"/>
 	  
 		</include>
 	    

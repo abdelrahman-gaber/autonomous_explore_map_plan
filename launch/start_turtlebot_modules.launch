@@ -1,6 +1,6 @@
 <launch>
 	<arg name="enable_turtlebot_simulation" value="true"/>
-	<arg name="enable_keyboard_teleoperation" value="true"/>
+	<arg name="enable_keyboard_teleoperation" value="false"/>
 	<arg name="enable_rviz" value="true"/>
         
 
