@@ -30,8 +30,11 @@ if __name__ == '__main__':
     #self.map_sub_ = rospy.Subscriber("/projected_map", OccupancyGrid, self.occupCallback, queue_size = 1)
 
     # pass the map and its resolution to ProcessProjectedMap()
-    pm = ProcessMap()
-    pm.ProcessProjectedMap()
+    rospy.sleep(10)
+    while True:
+    	pm = ProcessMap()
+    	pm.ProcessProjectedMap()
+    	print('starting new loop ...')
     #ProcessMap().ProcessProjectedMap()
 
     print ('exit out explore')

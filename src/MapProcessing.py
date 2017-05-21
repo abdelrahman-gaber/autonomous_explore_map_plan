@@ -6,6 +6,7 @@ import scipy.io as sio
 import scipy.ndimage as ndimage 
 import rospy
 import time
+import math
 from nav_msgs.msg import Odometry
 from nav_msgs.msg import OccupancyGrid
 from autonomous_explore_map_plan.srv import GotoWaypoint, GotoWaypointRequest, GotoWaypointResponse
@@ -41,12 +42,57 @@ class ProcessMap(object):
 		self.current_position[0] = msg.pose.pose.position.x
 		self.current_position[1] = msg.pose.pose.position.y
 
+	
+	def FindfBestPoint(self, BrushMap):
+		rows = BrushMap.shape[0]
+  		cols = BrushMap.shape[1]
+  		print(rows)
+  		print(cols)
+
+		best=np.amax(BrushMap)
+  		#print(best)
+  		index=[]
+
+		for k in range(4,rows-5):
+			for j in range(4,cols-5):
+				if BrushMap[k][j]==best:
+					inr=[k,j]
+					index.append(inr)
+		
+		N=[]
+		index=np.asarray(index)
+		for i in range(index.shape[0]):
+			n = 0
+			for k in range(-4,4):
+				for j in range(-4,4):
+					if BrushMap[index[i][0]+k][index[i][1]+j]==-1:
+						n=n+1
+			N.append(n)	
+
+		max_value = max(N)
+		max_index = N.index(max_value)		
+		bestPoint=[index[max_index][0],index[max_index][1]]
+		BestGazebo=[float(index[max_index][0]*self.res+self.xorg),float(index[max_index][1]*self.res+self.yorg)]
+		
+		print('Best point is ' )
+		print(bestPoint)
+		print('best point in Gazebo is')
+		print(BestGazebo)
+		bestPoint = np.array(bestPoint)
+		BestGazebo = np.array(BestGazebo)
+
+		return bestPoint, BestGazebo
+
+
+
 	def brushfire(self, map1):
 		#print(map1)
 		
 		rows = map1.shape[0]
   		cols = map1.shape[1]
   		num_zeros = (map1 == 0).sum()
+  		print('size of map start brushfire: ')
+  		print(map1.shape)
 
   		k=100; #Obstacle value
   		while num_zeros >0 :
@@ -112,6 +158,8 @@ class ProcessMap(object):
               					num_zeros=num_zeros-1
 			
 			k=k+1
+
+		'''
 		best=np.amax(map1)
   		#print(best)
   		index=[]
@@ -143,8 +191,9 @@ class ProcessMap(object):
 		print(BestGazebo)
 		bestPoint = np.array(bestPoint)
 		BestGazebo = np.array(BestGazebo)
+		'''
 
-		return bestPoint, BestGazebo, map1 
+		return np.asarray(map1) #bestPoint, BestGazebo 
 
 	# =================================================
 	def  wavefront(self, map, start, goal):
@@ -273,26 +322,34 @@ class ProcessMap(object):
 	def ProcessProjectedMap(self):
 		# get map
 		# reshape the map to the given dimensions 
-		rospy.sleep(15)
+		rospy.sleep(1)
 		data1 = np.reshape(self.dat, (self.wid ,self.heigh), order="F")
-		#data1 = np.reshape(data,(155,120), order="F")
 		data2 = np.asarray(data1)
 		print('sahpe of map is:')
 		print(data2.shape)
 
+		StartPointWF=np.array([int(math.floor((self.current_position[0]-self.xorg)/self.res)),int(math.floor((self.current_position[1]-self.yorg)/self.res))])
+
 		# Dilation 
-		data3 = ndimage.grey_dilation(data2, footprint=np.ones((3,3)))
+		data3 = ndimage.grey_dilation(data2, footprint=np.ones((15,15)))
 		#data3 = data2
 		#print(type(data2))
 		#print(data2.shape)
 
+		WS = 20;
 		# Call brushfire 
-		[value_m, BestGazebo, map1] = self.brushfire(data3)
-		#print(BestGazebo.shape)
-		#plt.imshow(map1)
-		#plt.show()
-		#value_m = self.brushfire(data2)
-		#value_m = [81,86]
+		#map1 = self.brushfire(data3)
+		print('size of map before brushfire: ')
+		print(data3.shape)
+		print('start point is:')
+		print(StartPointWF[0])
+		print(StartPointWF[1])
+		map1 = self.brushfire(data3[StartPointWF[0]-WS : StartPointWF[0]+WS, StartPointWF[1]-WS : StartPointWF[1]+WS])
+		#map1 = self.brushfire(data3[StartPointWF[0]-WS : StartPointWF[0]+WS][StartPointWF[1]-WS : StartPointWF[1]+WS])
+		print('size of map after brushfire: ')
+		print(map1.shape)
+		#[value_m, BestGazebo, map1] = self.brushfire(data3[StartPointWF[0]-100:StartPointWF[0]+100][StartPointWF[1]-100:StartPointWF[1]+100])
+		[value_m, BestGazebo] = self.FindfBestPoint(map1)
 
 		GoalPoint = np.array([BestGazebo])
 		#print(value_m)
@@ -301,8 +358,8 @@ class ProcessMap(object):
 		# Send request to /goto service 
 		print('got  first point ... finding a path ..... ')
 		goto_request = GotoWaypointRequest()
-		goto_request.goal_state_x = round(GoalPoint[0][0])
-		goto_request.goal_state_y = round(GoalPoint[0][1])
+		goto_request.goal_state_x = round(GoalPoint[0][0],0)
+		goto_request.goal_state_y = round(GoalPoint[0][1],0)
 		
 		goto_response = self.goto_serv_(goto_request)
 		

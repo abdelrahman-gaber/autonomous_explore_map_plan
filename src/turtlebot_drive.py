@@ -28,21 +28,25 @@ class Controller(object):
 		#rospy.loginfo("%s: starting turtlebot controller", rospy.get_name())
 		#self.odometry_sub_ = rospy.Subscriber("/odom", Odometry, self.odomCallback, queue_size = 1)
 		self.model_sub = rospy.Subscriber("/gazebo/model_states", ModelStates, self.modelcallback)
-		#self.map_sub_ = rospy.Subscriber("/projected_map", OccupancyGrid, self.occupCallback, queue_size = 1)
+		self.map_sub_ = rospy.Subscriber("/projected_map", OccupancyGrid, self.OccupancyGridCallback, queue_size = 1)
 		self.control_input_pub_ = rospy.Publisher("/mobile_base/commands/velocity", Twist, queue_size = 1)
 		
 		self.serv_ = rospy.Service('/turtlebot_drive/goto', 
                                   GotoWaypoint, 
-                                  self.calculateControlInput)
+                                  self.calculateControlInput2)
 		
 		self.current_position_ = np.zeros(2)
 		self.current_orientation_ = 0.0
 		
 		self.desired_position_ = np.zeros(2)
 		self.desired_orientation_ = 0.0
+		self.vmsg=Twist()
+		self.goal_th_xy = 0.1
+		self.goal_th_ang = 0.01
+		
 		
 		# rotate once at the beginning before exploring
-		rospy.sleep(1)
+		rospy.sleep(2)
 		self.rotateOnce()
 		
 		#print ('before service wait')
@@ -67,75 +71,156 @@ class Controller(object):
 		except rospy.ServiceException, e:
 			print "Service call failed: %s"%e
 	'''
-
-       
-	def calculateControlInput(self, req):
-		# define a request for FindPathToGoal service
+	def calculateControlInput2(self, req):
+		print ('in controlinput2')
 		planner_request = FindPathToGoalRequest()
 		planner_request.goal_state_x = req.goal_state_x
 		planner_request.goal_state_y = req.goal_state_y
-		
 		planner_response = self.find_path_to_goal_serv_(planner_request)
-		
-		# Driver for the robot 
+
+		checker = 0
 		for pose in planner_response.poses:
-			#print pose
-			control_input = Twist()
 			self.desired_position_[0] = pose.x
 			self.desired_position_[1] = pose.y
-	 		
-			loop_rate = rospy.Rate(100) # 10Hz
-			orientation_approach = False
-			while not rospy.is_shutdown():
-				inc_x = self.desired_position_[0] - self.current_position_[0]
-				inc_y = self.desired_position_[1] - self.current_position_[1]
-	 			
-				self.desired_orientation_ = wrapAngle(math.atan2(inc_y, inc_x))
-				yaw_error = wrapAngle(self.desired_orientation_ - self.current_orientation_)
-				distance_to_goal = math.sqrt(math.pow(inc_x, 2.0) + math.pow(inc_y, 2.0))
-	 			
-				if abs(yaw_error) > 0.04 and not orientation_approach:
-					control_input.angular.x = 0.0
-					control_input.angular.y = 0.0
-					control_input.angular.z = yaw_error * 1.0
-				
-					control_input.linear.x = 0.08
-					control_input.linear.y = 0.0
-					control_input.linear.z = 0.0
-				else:
-					control_input.angular.x = 0.0
-					control_input.angular.y = 0.0
-					control_input.angular.z = 0.0
-					
-					orientation_approach = True
-					liner_speed = abs(distance_to_goal) * 0.5
-					
-					if liner_speed < 0.1:
-						control_input.linear.x = 0.1
-					elif liner_speed > 0.2:
-						control_input.linear.x = 0.2
-					else:
-						control_input.linear.x = liner_speed
-					
-					control_input.linear.y = 0.0
-					control_input.linear.z = 0.0
-	 				
-				self.control_input_pub_.publish(control_input)
-	 			
-				rospy.logdebug("%s: current position: [%f, %f]\n", rospy.get_name(), self.current_position_[0], self.current_position_[1])
-				rospy.logdebug("%s: desired position: [%f, %f]\n", rospy.get_name(), self.desired_position_[0], self.desired_position_[1])
-				rospy.logdebug("%s: yaw_error: %f\n", rospy.get_name(), yaw_error)
-				rospy.logdebug("%s: current orientation: %f\n", rospy.get_name(), self.current_orientation_)
-				rospy.logdebug("%s: desired orientation: %f\n", rospy.get_name(), self.desired_orientation_)
-				rospy.logdebug("%s: distance_to_goal: %f\n", rospy.get_name(), distance_to_goal)
-				rospy.logdebug("%s: control_input.linear.x %f\n", rospy.get_name(), control_input.linear.x)
-				rospy.logdebug("%s: control_input.angular.z %f\n", rospy.get_name(), control_input.angular.z)
-	 			
-				if distance_to_goal <= 0.4:
-					break
-				loop_rate.sleep()
+			while True:
+			    self.compute_velocity() # and publish
+			    #rospy.sleep(0.5)
+			    obstacle = self.check_unknown_obstacle()
+			    if obstacle is True:
+			    	break
+			    xy_reach = self.has_arrived_xy()
+			    if xy_reach:
+				checker += 1
+			        break
+			
+			#if checker == 2:
+			    #break
+	    	return GotoWaypointResponse()
+			
+	def check_unknown_obstacle(self):
+	    # 1. defined unit vector from current pos to goal pos (gazebo unit)
+	    # 2. define segments in gazebo unit to assess obstacle
+	    # 3. for i = all seg, convert each to cell unit and check value
+	    #dist_to_goal_xy = self.dist_to_goal_xy()
+	    x_unit_vect = (self.desired_position_[0] - self.current_position_[0])*1.2 #/ dist_to_goal_xy
+	    y_unit_vect = (self.desired_position_[1] - self.current_position_[1])*1.2 #/ dist_to_goal_xy
+	    num_seg = 10
+	    obstacle = False
+
+	    #data1 = np.reshape(self.dat, (self.wid ,self.heigh), order="F")
+	    #data2 = np.asarray(data1)
 		
-		return GotoWaypointResponse()
+	    #x = self.current_position_[0]
+	    #y = self.current_position_[1]
+		
+	    for i in range(1, num_seg+1):
+		#data1 = np.reshape(self.dat, (self.wid ,self.heigh), order="F")
+	    	#data2 = np.asarray(data1)
+		
+	    	x = self.current_position_[0]
+	    	y = self.current_position_[1]	    	
+
+
+
+		x_gazebo =  x + x_unit_vect/num_seg * i
+		y_gazebo =  y + y_unit_vect/num_seg * i
+
+		x_map, y_map = self.gazebo2map(x_gazebo, y_gazebo)
+
+		#print ('x_map is '+str(x_map))
+		#print ('y_map is '+str(y_map))
+
+		data1 = np.reshape(self.dat, (self.wid ,self.heigh), order="F")
+		data2 = np.asarray(data1)
+		
+		#print ('in the map:'+str(data2[x_map, y_map]))
+	     	if data2[x_map, y_map] == 100: # obstacle
+	     		obstacle = True
+			return obstacle
+	     		#break
+	    return obstacle
+
+	def gazebo2map(self, x_gazebo, y_gazebo):
+		# convert units from gazebo to map
+		x_map = int(math.floor((x_gazebo - self.xorg) / self.res))
+		y_map = int(math.floor((y_gazebo - self.yorg) / self.res))
+		#print ('x_map is '+str(x_map))
+	    	#print ('y_map is '+str(y_map))
+	    	#print ('x_org is '+str(self.xorg))
+	    	#print ('y_org is '+str(self.yorg))
+		#print ('x_gazebo is '+str(x_gazebo))
+	    	#print ('y_gazebo is '+str(y_gazebo))
+		#print ('height is '+str(self.heigh))
+	    	#print ('width is '+str(self.wid))
+
+		if x_map < 0:
+			x_map = 0
+		elif x_map > self.wid - 2:
+			x_map = self.wid -1
+
+		if y_map < 0:
+			y_map = 0
+		elif y_map > self.heigh	-1:
+			y_map = self.heigh -1
+
+
+		#print ('x_map is '+str(x_map))
+	    	#print ('y_map is '+str(y_map))
+	    	#print ('x_org is '+str(self.xorg))
+	    	#print ('y_org is '+str(self.yorg))
+		#print ('x_gazebo is '+str(x_gazebo))
+	    	#print ('y_gazebo is '+str(y_gazebo))
+		#print ('height is '+str(self.heigh))
+	    	#print ('width is '+str(self.wid))
+		
+		return x_map, y_map		
+
+	def dist_to_goal_xy(self):
+        
+            #dist_to_goal_xy computes the distance in x and y direction to the 
+            #active goal
+        
+            return math.sqrt(pow(self.current_position_[0]-self.desired_position_[0],2)+pow(self.current_position_[1]-self.desired_position_[1],2))
+        	
+
+	def dist_to_goal_ang(self):
+        
+        #dist_to_goal_ang computes the orientation distance to the active
+        #goal
+        
+            return wrapAngle(self.desired_orientation_-self.current_orientation_)	
+
+
+	def has_arrived_xy(self):
+        
+        #has_arrived_xy returns true if the xy distance to the ative goal is
+        #smaller than the position threshold
+        
+            return self.dist_to_goal_xy()<self.goal_th_xy
+	
+
+	def compute_velocity(self):
+        
+        #compute_velocity computes the velocity which will be published.
+        
+        #TODO implement!
+        
+            if self.dist_to_goal_xy() > self.goal_th_xy:
+        	# Compute delta_angle
+        	angle_to_goal = math.atan2(self.desired_position_[1] - self.current_position_[1], self.desired_position_[0]-self.current_position_[0])
+        	delta_angle_to_goal = wrapAngle(self.current_orientation_ - angle_to_goal)
+
+	        # Assign angular velocity as 2*delta_angle
+	        self.vmsg.angular.z = -2*delta_angle_to_goal
+
+	        # If delta_angle small (facing obstacle, we can move)
+	        if np.abs(delta_angle_to_goal) < 0.05:
+	            self.vmsg.linear.x = min(0.5, 1.2*self.dist_to_goal_xy())
+            else:	
+                self.vmsg.angular.z = -1.2*self.dist_to_goal_ang()
+	    self.control_input_pub_.publish(self.vmsg)
+     
+	
 
 	def odomCallback(self, odometry_msg):
 		self.current_position_[0] = odometry_msg.pose.pose.position.x
@@ -144,12 +229,21 @@ class Controller(object):
 		self.current_orientation_ = wrapAngle(y)
 		return
 
+	def OccupancyGridCallback(self, msg):			
+		self.dat = msg.data
+		self.wid = msg.info.width
+		self.heigh = msg.info.height
+		self.res = msg.info.resolution
+		self.xorg = msg.info.origin.position.x
+		self.yorg = msg.info.origin.position.y
+
 
 	def modelcallback(self, msg):
 		#a = model_msg.name[6]
 		#mobile_base_idx = 6
 		#print (str(model_msg.pose[mobile_base_idx].orientation.x))
 		#print (str(len(model_msg.name)))
+		#rospy.sleep(1)
 		mobile_base_idx = -1
 		for i in range(len(msg.name)):
 		    #print ('in loop')
@@ -188,7 +282,7 @@ class Controller(object):
  		while True:
  			self.control_input_pub_.publish(control_input)
  			#print ('current orientation' + str(self.current_orientation_))
- 			rospy.sleep(0.1)
+ 			#rospy.sleep(0.1)
  			if np.abs(self.current_orientation_) < 0.1:
  				rotate += 1
  				print ('rotate' + str(rotate))
