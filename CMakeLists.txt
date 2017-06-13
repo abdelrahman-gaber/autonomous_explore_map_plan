@@ -171,6 +171,13 @@ src/state_validity_checker_octomap_R2.cpp
 target_link_libraries(offline_planner_R2 ${catkin_LIBRARIES} ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${CCD_LIBRARIES} ${OCTOMAP_LIBRARIES} ${OMPL_LIBRARIES})
 add_dependencies(offline_planner_R2 auv_msgs_generate_messages_cpp)
 
+add_executable(offline_planner_R2_2
+src/offline_planner_R2_2.cpp
+src/state_validity_checker_octomap_R2.cpp
+)
+target_link_libraries(offline_planner_R2_2 ${catkin_LIBRARIES} ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${CCD_LIBRARIES} ${OCTOMAP_LIBRARIES} ${OMPL_LIBRARIES})
+add_dependencies(offline_planner_R2_2 auv_msgs_generate_messages_cpp)
+
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
 ## target back to the shorter version for ease of user use

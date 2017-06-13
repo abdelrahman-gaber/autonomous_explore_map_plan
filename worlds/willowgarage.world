@@ -1302,10 +1302,10 @@
         </link>
       </model>
       <model name='willowgarage'>
-        <pose frame=''>-13.7617 -29.9459 0 0 -0 0</pose>
+        <pose frame=''>-30.7 -23.4 0 0 -0 0</pose>
         <scale>1 1 1</scale>
         <link name='walls'>
-          <pose frame=''>-13.7617 -29.9459 0 0 -0 0</pose>
+          <pose frame=''>-29.7 -31 0 0 -0 0</pose>
           <velocity>0 0 0 0 -0 0</velocity>
           <acceleration>0 0 0 0 -0 0</acceleration>
           <wrench>0 0 0 0 -0 0</wrench>

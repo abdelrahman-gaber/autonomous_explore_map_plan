@@ -109,14 +109,17 @@ OfflinePlannerR2::OfflinePlannerR2()
 	//=======================================================================
 	node_handler_.getParam("planning_bounds_x", planning_bounds_x_);
 	node_handler_.getParam("planning_bounds_y", planning_bounds_y_);
-	node_handler_.getParam("solving_time", solving_time_);
-	node_handler_.getParam("planner_name", planner_name_);
+	//node_handler_.getParam("solving_time", solving_time_);
+	//node_handler_.getParam("planner_name", planner_name_);
 	planning_depth_ = 0.3;
-
+	solving_time_ = 50;
+	planner_name_ = "RRT";
+	//node_handler_.planner_name_ = "RRTstar";
+	//node_handler_.solving_time_ = 20;
 	//=======================================================================
 	// Service
 	//=======================================================================
-	service_ = node_handler_.advertiseService("/turtlebot_drive/find_path_to_goal", &OfflinePlannerR2::findPathToGoal, this);
+	service_ = node_handler_.advertiseService("/turtlebot_return/find_path_to_goal", &OfflinePlannerR2::findPathToGoal, this);
 }
 
 //!  Planner setup.

@@ -21,11 +21,12 @@ from autonomous_explore_map_plan.srv import GotoWaypoint, GotoWaypointResponse, 
 #Numpy
 import numpy as np
 
-class Controller(object):
+class Returner(object):
 
     def __init__(self):
-
-	self.current_position_ = np.zeros(2)
+        #rospy.init_node('turtlebot_drive', log_level=rospy.INFO)
+        #rospy.loginfo("%s: starting turtlebot controller", rospy.get_name())
+        self.current_position_ = np.zeros(2)
         self.current_orientation_ = 0.0
         
         self.desired_position_ = np.zeros(2)
@@ -34,29 +35,28 @@ class Controller(object):
         self.goal_th_xy = 0.1
         self.goal_th_ang = 0.01
 
-	rospy.sleep(1)
-        
-        #rospy.init_node('turtlebot_drive', log_level=rospy.INFO)
-        #rospy.loginfo("%s: starting turtlebot controller", rospy.get_name())
+
+
         self.odometry_sub_ = rospy.Subscriber("/odom", Odometry, self.odomCallback, queue_size = 1)
         #self.model_sub = rospy.Subscriber("/gazebo/model_states", ModelStates, self.modelcallback)
         self.map_sub_ = rospy.Subscriber("/projected_map", OccupancyGrid, self.OccupancyGridCallback, queue_size = 1)
         self.control_input_pub_ = rospy.Publisher("/mobile_base/commands/velocity", Twist, queue_size = 10)
         
-        self.serv_ = rospy.Service('/turtlebot_drive/goto', 
+        self.serv_ = rospy.Service('/turtlebot_return/goto', 
                                   GotoWaypoint, 
                                   self.calculateControlInput2)
         
         
         
+        
         # rotate once at the beginning before exploring
-        rospy.sleep(1)
-        self.rotateOnce()
+        #rospy.sleep(1)
+        #self.rotateOnce()
         
         #print ('before service wait')
-        rospy.wait_for_service('/turtlebot_drive/find_path_to_goal')
+        rospy.wait_for_service('/turtlebot_return/find_path_to_goal')
         try:
-            self.find_path_to_goal_serv_ = rospy.ServiceProxy('/turtlebot_drive/find_path_to_goal', FindPathToGoal)
+            self.find_path_to_goal_serv_2 = rospy.ServiceProxy('/turtlebot_return/find_path_to_goal', FindPathToGoal)
         except rospy.ServiceException, e:
             print "Service call failed: %s"%e
         
@@ -78,13 +78,21 @@ class Controller(object):
     def calculateControlInput2(self, req):
     
         GotoResp = GotoWaypointResponse()
-        print ('in turtlebot_drive')
+        #print ('in controlinput2')
         planner_request = FindPathToGoalRequest()
         planner_request.goal_state_x = req.goal_state_x
         planner_request.goal_state_y = req.goal_state_y
-        planner_response = self.find_path_to_goal_serv_(planner_request)
+
+        print ('in turtlebot_return function')
+        print ('currentx' + str(self.current_position_[0]))
+        print ('currenty' + str(self.current_position_[1]))
+        print ('currentx' + str(req.goal_state_x))
+        print ('currenty' + str(req.goal_state_y))
+        planner_response = self.find_path_to_goal_serv_2(planner_request)
 
         checker = 0
+
+        #GotoResp.FindPathFlag = 0
         for pose in planner_response.poses:
             self.desired_position_[0] = pose.x
             self.desired_position_[1] = pose.y
@@ -116,6 +124,7 @@ class Controller(object):
                 #break
         #return GotoWaypointResponse()
         GotoResp.FindPathFlag = 1
+
         return GotoResp
             
     def check_unknown_obstacle(self):
@@ -125,8 +134,8 @@ class Controller(object):
         dist_to_goal_xy = self.dist_to_goal_xy()
         unit_distance = 0.1
 
-        x_unit_vect = (self.desired_position_[0] - self.current_position_[0])*1.1 #/ dist_to_goal_xy
-        y_unit_vect = (self.desired_position_[1] - self.current_position_[1])*1.1 #/ dist_to_goal_xy
+        x_unit_vect = (self.desired_position_[0] - self.current_position_[0])*1.2 #/ dist_to_goal_xy
+        y_unit_vect = (self.desired_position_[1] - self.current_position_[1])*1.2 #/ dist_to_goal_xy
         num_seg = int(round(dist_to_goal_xy / unit_distance))
         obstacle = False
 
@@ -141,7 +150,7 @@ class Controller(object):
         for i in range(1, num_seg+1):
             x_gazebo =  x + x_unit_vect/num_seg * i
             y_gazebo =  y + y_unit_vect/num_seg * i
-            dist = math.sqrt(pow(x-x_gazebo,2)+pow(y-y_gazebo,2))
+
             x_map, y_map = self.gazebo2map(x_gazebo, y_gazebo, x_org, y_org)
 
         #print ('x_map is '+str(x_map))
@@ -155,7 +164,7 @@ class Controller(object):
             # window around (x_map, y_map) all will be checked
             win = np.zeros((5, 5)) 
             win = data2[x_map-2:x_map+3, y_map-2:y_map+3]
-            if np.sum([win]) >= 100 and dist < 2:
+            if np.sum([win]) >= 100:
             #if data2[x_map, y_map] == 100: # obstacle
                 obstacle = True
                 return obstacle
@@ -278,7 +287,7 @@ class Controller(object):
                 self.vmsg.angular.z = -sign_angle*min(self.max_ang_speed,                  # Max value
                                                  6*np.abs(delta_angle_to_goal),       # Proportional component
                                                  abs(self.vmsg.angular.z)*1.1 + 0.05) # Smoothing factor
-                #print ('delta angle:'+ str(delta_angle_to_goal))
+                print ('delta angle:'+ str(delta_angle_to_goal))
         #print ('current orientation angle:'+ str(self.current_orientation_))
         #print ('angle to goal angle:'+ str(angle_to_goal))
                 # Linear speed
@@ -288,8 +297,7 @@ class Controller(object):
                                     self.vmsg.linear.x*1.1+ 0.05)  # Smoothing factor
                 else:
                     self.vmsg.linear.x = self.vmsg.linear.x*0.75 #Keep some speed if not facing obstacle
-        #else:
-            #self.vmsg.linear.x = self.vmsg.linear.x * 0.5
+
 
             #self.vmsg = temp_msg
         
@@ -409,17 +417,17 @@ def wrapAngle(ang):
     return ang
 
 if __name__ == '__main__':
-    rospy.init_node('turtlebot_drive', log_level=rospy.INFO)
-    rospy.loginfo("%s: starting turtlebot controller", rospy.get_name())
+    rospy.init_node('turtlebot_return', log_level=rospy.INFO)
+    rospy.loginfo("%s: starting turtlebot returner", rospy.get_name())
 
     print ('before controller')
-    controller = Controller()
-    print ('after controller')
-    print (str(controller.current_orientation_))
+    returner = Returner()
+    print ('after returner')
+    #print (str(returner.current_orientation_))
     #while not rospy.is_shutdown():
     #controller.rotateOnce()
         
     #controller.service()
-    print ('exit out drive')
+    #print ('exit out drive')
     rospy.spin()
 
